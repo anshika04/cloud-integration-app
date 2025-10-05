@@ -1,0 +1,42 @@
+# Multi-stage build for backend
+FROM maven:3.9.8-eclipse-temurin-21 AS build
+
+WORKDIR /app
+
+# Copy pom.xml first for better layer caching
+COPY pom.xml .
+
+# Download dependencies
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+ARG SPRING_PROFILES_ACTIVE=docker
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+RUN mvn clean package -DskipTests
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
+
+# Install wget for health checks
+RUN apk add --no-cache wget
+
+WORKDIR /app
+
+# Copy the built jar from build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/cloud/health || exit 1
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

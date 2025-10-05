@@ -1,0 +1,84 @@
+# QA Environment Configuration
+spring:
+  application:
+    name: cloud-integration-app
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://postgres:5432/cloudintegration_qa
+    username: qa_user
+    password: ${DB_PASSWORD:qa_secure_password}
+    driver-class-name: org.postgresql.Driver
+    
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        
+  # Server Configuration
+  server:
+    port: 8080
+    servlet:
+      context-path: /api
+      
+  # Logging Configuration
+  logging:
+    level:
+      com.example.cloudintegrationapp: INFO
+      org.springframework.security: WARN
+      org.hibernate.SQL: WARN
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+      file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file:
+      name: /app/logs/application.log
+
+# Application Specific Configuration
+app:
+  security:
+    jwt:
+      enabled: true
+      secret: ${JWT_SECRET:qa_jwt_secret_key_change_in_production}
+      expiration: 86400000  # 24 hours
+    cors:
+      allowed-origins: 
+        - "https://qa.cloud-integration.company.com"
+        - "http://qa.cloud-integration.company.com"
+      allowed-methods: 
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowed-headers: "*"
+      
+  cloud:
+    gcp:
+      enabled: true
+      project-id: ${GCP_PROJECT_ID:qa-project}
+      service-account-key: ${GCP_SERVICE_ACCOUNT_KEY:}
+    splunk:
+      enabled: true
+      host: ${SPLUNK_HOST:qa-splunk.company.com}
+      port: ${SPLUNK_PORT:8089}
+      token: ${SPLUNK_TOKEN:}
+
+# Azure Configuration
+azure:
+  enabled: false
+      
+# Management endpoints for QA
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics"
+  endpoint:
+    health:
+      show-details: when-authorized

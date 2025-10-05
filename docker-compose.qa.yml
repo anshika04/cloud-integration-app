@@ -1,0 +1,114 @@
+# QA Environment Docker Compose
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cloud-integration-qa-postgres
+    environment:
+      POSTGRES_DB: cloudintegration_qa
+      POSTGRES_USER: qa_user
+      POSTGRES_PASSWORD: qa_secure_password
+    ports:
+      - "5433:5432"  # QA Database port
+    volumes:
+      - postgres_qa_data:/var/lib/postgresql/data
+      - ./environments/qa/backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - cloud-network-qa
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qa_user -d cloudintegration_qa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cloud-integration-qa-redis
+    ports:
+      - "6380:6379"  # QA Redis port
+    volumes:
+      - redis_qa_data:/data
+    networks:
+      - cloud-network-qa
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        - SPRING_PROFILES_ACTIVE=qa
+    container_name: cloud-integration-qa-backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=qa
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=cloudintegration_qa
+      - DB_USERNAME=qa_user
+      - DB_PASSWORD=qa_secure_password
+      - JWT_SECRET=qa_jwt_secret_key_change_in_production
+      - AZURE_CLIENT_ID=qa_azure_client_id
+      - AZURE_CLIENT_SECRET=qa_azure_client_secret
+      - AZURE_TENANT_ID=qa_azure_tenant_id
+      - GCP_PROJECT_ID=qa_gcp_project_id
+      - GCP_SERVICE_ACCOUNT_KEY=qa_gcp_service_account_key
+      - SPLUNK_HOST=qa_splunk_host
+      - SPLUNK_TOKEN=qa_splunk_token
+    ports:
+      - "8082:8080"  # QA Backend port
+    volumes:
+      - ./environments/qa/backend/application-qa.yml:/app/config/application-qa.yml
+      - ./logs/backend-qa:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cloud-network-qa
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/cloud/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ../cloud-integration-frontend
+      dockerfile: Dockerfile.frontend
+      args:
+        - ENVIRONMENT=qa
+    container_name: cloud-integration-qa-frontend
+    environment:
+      - ENVIRONMENT=qa
+    ports:
+      - "3002:80"  # QA Frontend port
+    volumes:
+      - ./environments/qa/frontend/environment.qa.ts:/app/src/environments/environment.ts
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cloud-network-qa
+    restart: unless-stopped
+
+volumes:
+  postgres_qa_data:
+    driver: local
+  redis_qa_data:
+    driver: local
+
+networks:
+  cloud-network-qa:
+    driver: bridge

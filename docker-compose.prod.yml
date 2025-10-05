@@ -1,0 +1,146 @@
+# Production Environment Docker Compose
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cloud-integration-prod-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cloudintegration_prod}
+      POSTGRES_USER: ${DB_USERNAME:-prod_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5434:5432"  # Prod Database port
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./environments/prod/backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - cloud-network-prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-prod_user} -d ${DB_NAME:-cloudintegration_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cloud-integration-prod-redis
+    ports:
+      - "6381:6379"  # Prod Redis port
+    volumes:
+      - redis_prod_data:/data
+      - ./environments/prod/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - cloud-network-prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        - SPRING_PROFILES_ACTIVE=prod
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-cloudintegration_prod}
+      - DB_USERNAME=${DB_USERNAME:-prod_user}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-3600000}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - GCP_SERVICE_ACCOUNT_KEY=${GCP_SERVICE_ACCOUNT_KEY}
+      - SPLUNK_HOST=${SPLUNK_HOST}
+      - SPLUNK_PORT=${SPLUNK_PORT:-8089}
+      - SPLUNK_TOKEN=${SPLUNK_TOKEN}
+    ports:
+      - "8083:8080"  # Prod Backend port
+    volumes:
+      - ./environments/prod/backend/application-prod.yml:/app/config/application-prod.yml
+      - ./logs/backend-prod:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cloud-network-prod
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/cloud/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ../cloud-integration-frontend
+      dockerfile: Dockerfile.frontend
+      args:
+        - ENVIRONMENT=prod
+    environment:
+      - ENVIRONMENT=prod
+    ports:
+      - "3003:80"  # Prod Frontend port
+    volumes:
+      - ./environments/prod/frontend/environment.prod.ts:/app/src/environments/environment.ts
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cloud-network-prod
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+
+networks:
+  cloud-network-prod:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:

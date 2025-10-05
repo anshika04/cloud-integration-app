@@ -1,0 +1,109 @@
+# Production Environment Configuration
+spring:
+  application:
+    name: cloud-integration-app
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:cloudintegration_prod}
+    username: ${DB_USERNAME:prod_user}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+        
+  # Server Configuration
+  server:
+    port: 8080
+    servlet:
+      context-path: /api
+    compression:
+      enabled: true
+      mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    http2:
+      enabled: true
+      
+  # Logging Configuration
+  logging:
+    level:
+      com.example.cloudintegrationapp: INFO
+      org.springframework.security: WARN
+      org.hibernate.SQL: WARN
+      org.springframework.web: WARN
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+      file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file:
+      name: /app/logs/application.log
+      max-size: 100MB
+      max-history: 30
+
+# Application Specific Configuration
+app:
+  security:
+    jwt:
+      enabled: true
+      secret: ${JWT_SECRET}
+      expiration: ${JWT_EXPIRATION:3600000}  # 1 hour default
+    cors:
+      allowed-origins: 
+        - "https://cloud-integration.company.com"
+      allowed-methods: 
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+      
+  cloud:
+    azure:
+      enabled: true
+      client-id: ${AZURE_CLIENT_ID}
+      client-secret: ${AZURE_CLIENT_SECRET}
+      tenant-id: ${AZURE_TENANT_ID}
+    gcp:
+      enabled: true
+      project-id: ${GCP_PROJECT_ID}
+      service-account-key: ${GCP_SERVICE_ACCOUNT_KEY}
+    splunk:
+      enabled: true
+      host: ${SPLUNK_HOST}
+      port: ${SPLUNK_PORT:8089}
+      token: ${SPLUNK_TOKEN}
+      
+# Management endpoints for production
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: never
+    info:
+      enabled: true
+  info:
+    env:
+      enabled: true
