@@ -26,7 +26,7 @@ This project provides a comprehensive cloud integration platform with the follow
 - **Logging & Monitoring**: Splunk integration with comprehensive logging
 - **Security**: OAuth2 Resource Server with environment-specific security configurations
 - **Containerization**: Docker support for all environments
-- **Database**: PostgreSQL with Redis caching
+- **Database**: PostgreSQL with Redis caching and data management
 - **Frontend**: Angular 17 with Material Design components
 
 ## 🏗️ Architecture
@@ -82,13 +82,21 @@ Backend (Spring Boot 3.2)
 │   ├── GCP Service
 │   └── Splunk Service
 ├── Data Access Layer
-└── Configuration Management
+│   ├── Redis Cache Service
+│   ├── Data Entity Repository
+│   └── Cache Data Management
+├── Configuration Management
+└── Redis Integration Services
 
 Infrastructure
 ├── Docker Containers
 ├── Environment Configurations
 ├── Database (PostgreSQL)
 ├── Cache (Redis)
+│   ├── Redis Cache Service
+│   ├── Data Entity Management
+│   ├── Reference ID Generation
+│   └── Cache Statistics & Monitoring
 └── Logging (Splunk)
 ```
 
@@ -167,8 +175,15 @@ cloud-integration-app/
 │   │   │   ├── gcp/                       # GCP integration
 │   │   │   └── splunk/                    # Splunk integration
 │   │   ├── model/                         # Data models
+│   │   │   ├── DataEntity.java           # JPA entity for structured data
+│   │   │   ├── CacheData.java            # Redis cache data model
+│   │   │   └── ApiResponse.java          # Standardized API responses
 │   │   ├── repository/                    # Data access layer
+│   │   │   └── DataEntityRepository.java # JPA repository for data entities
 │   │   └── service/                       # Business logic services
+│   │       ├── RedisCacheService.java    # Redis cache operations
+│   │       ├── DataService.java          # Data orchestration service
+│   │       └── ReferenceIdGenerator.java # Unique ID generation service
 │   └── main/resources/
 │       └── application.yml                # Main configuration
 ├── environments/                          # Environment-specific configs
@@ -204,6 +219,7 @@ cloud-integration-app/
 ├── docker-compose.prod.yml               # Production Docker Compose
 ├── Dockerfile.backend                    # Backend Dockerfile
 ├── pom.xml                               # Maven configuration
+├── REDIS_CACHE_API.md                    # Redis cache API documentation
 └── README.md
 
 cloud-integration-frontend/
@@ -545,6 +561,215 @@ POST /cloud/splunk/log
 GET /cloud/splunk/search
 ```
 
+### Redis Cache Integration
+
+The application includes comprehensive Redis cache integration with data management capabilities, reference ID generation, and cache statistics monitoring.
+
+#### Cache Management Endpoints
+
+**Cache Statistics:**
+```http
+GET /cache/stats
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Cache statistics retrieved successfully",
+  "data": {
+    "redis_version": "7.4.6",
+    "total_commands_processed": "150",
+    "used_memory": "2.5M",
+    "connected_clients": "3",
+    "keyspace_hits": "45",
+    "application_keys_count": 12,
+    "keyspace_misses": "8"
+  },
+  "timestamp": "2025-10-07T06:55:06"
+}
+```
+
+**Reference ID Generation:**
+```http
+GET /cache/generate-reference-id
+GET /cache/generate-reference-id/{prefix}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Reference ID generated successfully",
+  "data": "CLD-20251007065510-ABC123-0001",
+  "referenceId": "CLD-20251007065510-ABC123-0001",
+  "timestamp": "2025-10-07T06:55:10"
+}
+```
+
+**Data Storage:**
+```http
+POST /cache/store
+Content-Type: application/json
+
+{
+  "prefix": "USER",
+  "data": {
+    "userId": 12345,
+    "sessionId": "sess_abc123",
+    "preferences": {
+      "theme": "dark",
+      "language": "en"
+    }
+  },
+  "dataType": "USER_SESSION",
+  "ttlSeconds": 3600
+}
+```
+
+**Data Retrieval:**
+```http
+GET /cache/retrieve/{referenceId}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Data retrieved from cache successfully",
+  "data": {
+    "referenceId": "USER-20251007065510-DEF456-0002",
+    "dataType": "USER_SESSION",
+    "data": {
+      "userId": 12345,
+      "sessionId": "sess_abc123",
+      "preferences": {
+        "theme": "dark",
+        "language": "en"
+      }
+    },
+    "cachedAt": "2025-10-07T06:55:10",
+    "ttlSeconds": 3600
+  },
+  "referenceId": "USER-20251007065510-DEF456-0002"
+}
+```
+
+**Cache Operations:**
+```http
+# Check if data exists
+GET /cache/exists/{referenceId}
+
+# Delete cached data
+DELETE /cache/delete/{referenceId}
+
+# Get TTL for data
+GET /cache/ttl/{referenceId}
+
+# Set TTL for data
+PUT /cache/ttl/{referenceId}?ttlSeconds=7200
+```
+
+#### Data Entity Management
+
+**Create Data Entity:**
+```http
+POST /cache/data-entity
+Content-Type: application/json
+
+{
+  "name": "Sample Data Entity",
+  "description": "This is a sample data entity for testing",
+  "category": "SAMPLE"
+}
+```
+
+**List Data Entities:**
+```http
+GET /cache/data-entities
+```
+
+**Get Specific Data Entity:**
+```http
+GET /cache/data-entity/{referenceId}
+```
+
+#### Cloud Integration with Cache
+
+**Store Custom Data:**
+```http
+POST /cloud/store-data
+Content-Type: application/json
+
+{
+  "prefix": "CLOUD",
+  "data": {
+    "operation": "upload",
+    "fileSize": 1024,
+    "status": "completed"
+  },
+  "dataType": "FILE_UPLOAD",
+  "ttlSeconds": 1800
+}
+```
+
+**Retrieve Custom Data:**
+```http
+GET /cloud/retrieve-data/{referenceId}
+```
+
+**Azure Upload with Cache Tracking:**
+```http
+POST /cloud/azure/upload-with-cache
+Content-Type: multipart/form-data
+
+file: [binary file data]
+```
+
+**Azure Upload Status:**
+```http
+GET /cloud/azure/upload-status/{referenceId}
+```
+
+#### Redis Configuration
+
+**Environment-Specific Redis Settings:**
+
+**Development:**
+- Host: `redis` (Docker network)
+- Port: `6379`
+- Database: `0`
+- Connection Pool: 8 max active connections
+
+**QA:**
+- Host: `redis` (Docker network)
+- Port: `6379`
+- Database: `1`
+- Connection Pool: 8 max active connections
+
+**Production:**
+- Host: `redis` (Docker network)
+- Port: `6379`
+- Database: `2`
+- Connection Pool: 20 max active connections
+- Enhanced monitoring and logging
+
+#### Reference ID Generation
+
+The system provides various reference ID generators:
+
+- **Default**: `CLD-{timestamp}-{random}`
+- **Azure**: `AZR-{timestamp}-{random}`
+- **GCP**: `GCP-{timestamp}-{random}`
+- **Splunk**: `SPL-{timestamp}-{random}`
+- **User**: `USR-{timestamp}-{random}`
+- **Document**: `DOC-{timestamp}-{random}`
+- **Transaction**: `TXN-{timestamp}-{random}`
+- **Cache**: `CACHE-{timestamp}-{random}`
+- **System**: `SYS-{timestamp}-{random}`
+
+**Format:** `{PREFIX}-{YYYYMMDDHHMMSS}-{6_CHAR_ALPHANUMERIC}-{SEQUENCE}`
+
 ### Authentication
 
 #### Development/QA
@@ -579,10 +804,22 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  data:
+    redis:
+      host: redis
+      port: 6379
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 logging:
   level:
     com.example.cloudintegrationapp: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.data.redis: DEBUG
 ```
 
 **QA (`application-qa.yml`):**
@@ -599,6 +836,17 @@ spring:
       resourceserver:
         jwt:
           validation: false
+  data:
+    redis:
+      host: redis
+      port: 6379
+      database: 1
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 azure:
   enabled: false
 gcp:
@@ -621,6 +869,18 @@ spring:
       resourceserver:
         jwt:
           validation: true
+  data:
+    redis:
+      host: redis
+      port: 6379
+      database: 2
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 3000ms
 azure:
   enabled: true
 gcp:
@@ -742,6 +1002,58 @@ curl -H "Authorization: Bearer <token>" http://localhost:8083/api/cloud/health
 echo $JWT_SECRET
 ```
 
+#### 6. Redis Cache Issues
+
+**Error:** `Connection refused to Redis` or cache operations failing
+
+**Solution:**
+```bash
+# Check Redis container status
+docker ps | grep redis
+
+# Check Redis logs
+docker logs cloud-integration-dev-redis
+docker logs cloud-integration-qa-redis
+docker logs cloud-integration-prod-redis
+
+# Test Redis connection
+docker exec cloud-integration-dev-redis redis-cli ping
+
+# Check Redis memory usage
+docker exec cloud-integration-dev-redis redis-cli info memory
+
+# Clear Redis cache if needed
+docker exec cloud-integration-dev-redis redis-cli flushdb
+```
+
+**Error:** `Cache data not found` or TTL issues
+
+**Solution:**
+```bash
+# Check if data exists in Redis
+docker exec cloud-integration-dev-redis redis-cli keys "cloud-integration:data:*"
+
+# Check TTL for specific key
+docker exec cloud-integration-dev-redis redis-cli ttl "cloud-integration:data:YOUR_REFERENCE_ID"
+
+# Monitor Redis operations
+docker exec cloud-integration-dev-redis redis-cli monitor
+```
+
+#### 7. Database Schema Issues
+
+**Error:** `Schema-validation: missing table [data_entities]`
+
+**Solution:**
+```bash
+# Check if JPA is configured to create tables
+grep -r "ddl-auto" environments/*/backend/
+
+# Should be set to "update" not "validate"
+# Restart backend container after fixing configuration
+docker-compose -p cloud-integration-dev -f docker-compose.dev.yml restart backend
+```
+
 ### Log Analysis
 
 #### View Application Logs
@@ -789,6 +1101,46 @@ SELECT count(*) FROM pg_stat_activity;
 
 # Check slow queries
 SELECT query, mean_time, calls FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;
+```
+
+#### Redis Cache Performance
+
+```bash
+# Connect to Redis
+docker exec -it cloud-integration-dev-redis redis-cli
+
+# Check Redis info
+INFO stats
+INFO memory
+INFO clients
+
+# Monitor Redis operations in real-time
+MONITOR
+
+# Check cache hit ratio
+INFO stats | grep keyspace_hits
+INFO stats | grep keyspace_misses
+
+# List all cached data
+KEYS "cloud-integration:data:*"
+
+# Check memory usage by key
+MEMORY USAGE "cloud-integration:data:YOUR_REFERENCE_ID"
+
+# Get Redis configuration
+CONFIG GET "*"
+```
+
+#### Cache Statistics API
+
+```bash
+# Get cache statistics via API
+curl http://localhost:8081/api/cache/stats
+curl http://localhost:8082/api/cache/stats
+curl http://localhost:8083/api/cache/stats
+
+# Check cache health
+curl http://localhost:8081/api/cloud/health
 ```
 
 ## 🤝 Contributing
@@ -878,6 +1230,7 @@ For support and questions:
 
 ---
 
-**Last Updated:** January 2024  
-**Version:** 1.0.0  
+**Last Updated:** October 2025  
+**Version:** 1.1.0  
+**Features:** Redis Cache Integration, Multi-Environment Support, Cloud Integrations  
 **Maintainer:** Cloud Integration Team
