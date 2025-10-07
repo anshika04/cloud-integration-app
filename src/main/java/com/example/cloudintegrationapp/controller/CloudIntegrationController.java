@@ -3,6 +3,10 @@ package com.example.cloudintegrationapp.controller;
 import com.example.cloudintegrationapp.integration.azure.AzureService;
 import com.example.cloudintegrationapp.integration.gcp.GcpService;
 import com.example.cloudintegrationapp.integration.splunk.SplunkService;
+import com.example.cloudintegrationapp.service.DataService;
+import com.example.cloudintegrationapp.service.RedisCacheService;
+import com.example.cloudintegrationapp.service.ReferenceIdGenerator;
+import com.example.cloudintegrationapp.model.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +28,15 @@ public class CloudIntegrationController {
 
 //    @Autowired
 //    private SplunkService splunkService;
+    
+    @Autowired
+    private DataService dataService;
+    
+    @Autowired
+    private RedisCacheService redisCacheService;
+    
+    @Autowired
+    private ReferenceIdGenerator referenceIdGenerator;
 
     @PostMapping("/azure/upload")
     public ResponseEntity<Map<String, String>> uploadToAzure(@RequestParam("file") MultipartFile file) {
@@ -174,5 +187,133 @@ public class CloudIntegrationController {
         }
         
         return ResponseEntity.ok(response);
+    }
+    
+    // ===== REDIS CACHE INTEGRATION ENDPOINTS =====
+    
+    @PostMapping("/generate-reference")
+    public ResponseEntity<ApiResponse<String>> generateReferenceId(@RequestParam(required = false) String prefix) {
+        try {
+            String referenceId = prefix != null ? 
+                referenceIdGenerator.generateReferenceId(prefix) : 
+                referenceIdGenerator.generateReferenceId();
+            
+            return ResponseEntity.ok(ApiResponse.success("Reference ID generated", referenceId, referenceId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Error generating reference ID: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/store-data")
+    public ResponseEntity<ApiResponse<String>> storeData(@RequestBody Map<String, Object> request) {
+        try {
+            String prefix = (String) request.getOrDefault("prefix", "CLD");
+            Object data = request.get("data");
+            String dataType = (String) request.getOrDefault("dataType", "CLOUD_DATA");
+            Long ttlSeconds = request.get("ttlSeconds") != null ? 
+                Long.valueOf(request.get("ttlSeconds").toString()) : null;
+            
+            if (data == null) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Data is required"));
+            }
+            
+            ApiResponse<String> result = dataService.storeCustomData(prefix, data, dataType, ttlSeconds);
+            
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(result);
+            } else {
+                return ResponseEntity.badRequest().body(result);
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Error storing data: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/retrieve-data/{referenceId}")
+    public ResponseEntity<ApiResponse<Object>> retrieveData(@PathVariable String referenceId) {
+        try {
+            ApiResponse<Object> result = dataService.getCustomData(referenceId);
+            
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(result);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Error retrieving data: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/cache-stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getCacheStats() {
+        try {
+            ApiResponse<Map<String, Object>> result = dataService.getCacheStatistics();
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Error retrieving cache statistics: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/azure/upload-with-cache")
+    public ResponseEntity<ApiResponse<String>> uploadToAzureWithCache(@RequestParam("file") MultipartFile file) {
+        if (azureService == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Azure integration is disabled"));
+        }
+        
+        try {
+            // Generate reference ID for this upload
+            String referenceId = referenceIdGenerator.generateAzureReferenceId();
+            
+            // Store file metadata in cache
+            Map<String, Object> fileMetadata = new HashMap<>();
+            fileMetadata.put("originalName", file.getOriginalFilename());
+            fileMetadata.put("size", file.getSize());
+            fileMetadata.put("contentType", file.getContentType());
+            fileMetadata.put("uploadTime", java.time.LocalDateTime.now().toString());
+            
+            // Store in cache with 1 hour TTL
+            redisCacheService.storeData(referenceId, 
+                new com.example.cloudintegrationapp.model.CacheData(referenceId, "AZURE_UPLOAD", fileMetadata, 3600L));
+            
+            // Upload to Azure (original functionality)
+            azureService.uploadBlob(file.getOriginalFilename(), file.getBytes());
+            
+            // Update cache with success status
+            fileMetadata.put("status", "UPLOADED");
+            fileMetadata.put("azureBlobName", file.getOriginalFilename());
+            redisCacheService.storeData(referenceId, 
+                new com.example.cloudintegrationapp.model.CacheData(referenceId, "AZURE_UPLOAD", fileMetadata, 3600L));
+            
+            return ResponseEntity.ok(ApiResponse.success("File uploaded to Azure with cache tracking", referenceId, referenceId));
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Failed to upload file: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/azure/upload-status/{referenceId}")
+    public ResponseEntity<ApiResponse<Object>> getAzureUploadStatus(@PathVariable String referenceId) {
+        try {
+            ApiResponse<Object> result = dataService.getCustomData(referenceId);
+            
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(result);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Error retrieving upload status: " + e.getMessage()));
+        }
     }
 }
