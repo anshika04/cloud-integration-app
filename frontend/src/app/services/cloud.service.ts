@@ -69,6 +69,10 @@ export class CloudService {
     return this.http.delete(`${this.apiUrl}/cloud/gcp/files/${filename}`);
   }
 
+  parseExcelFromGcp(filename: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/cloud/gcp/excel/parse/${filename}`, {});
+  }
+
   // Splunk Services
   logToSplunk(event: string, source: string, sourcetype: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/cloud/splunk/log`, {

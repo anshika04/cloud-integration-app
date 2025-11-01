@@ -71,6 +71,11 @@
           <span matListItemTitle>System Monitoring</span>
         </a>
         
+        <a mat-list-item routerLink="/excel-processor" routerLinkActive="active-link" (click)="isMobile && sidenav.close()">
+          <mat-icon matListItemIcon>table_chart</mat-icon>
+          <span matListItemTitle>Excel Processor</span>
+        </a>
+        
         <mat-divider></mat-divider>
         
         <a mat-list-item href="/api/cloud/test" target="_blank">

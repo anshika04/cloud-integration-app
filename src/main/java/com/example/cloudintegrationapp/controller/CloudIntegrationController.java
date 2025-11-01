@@ -3,6 +3,7 @@ package com.example.cloudintegrationapp.controller;
 import com.example.cloudintegrationapp.integration.azure.AzureService;
 import com.example.cloudintegrationapp.integration.gcp.GcpService;
 import com.example.cloudintegrationapp.service.DataService;
+import com.example.cloudintegrationapp.service.ExcelProcessingService;
 import com.example.cloudintegrationapp.service.RedisCacheService;
 import com.example.cloudintegrationapp.service.ReferenceIdGenerator;
 import com.example.cloudintegrationapp.model.ApiResponse;
@@ -24,6 +25,9 @@ public class CloudIntegrationController {
 
     @Autowired(required = false)
     private GcpService gcpService;
+    
+    @Autowired
+    private ExcelProcessingService excelProcessingService;
 
 //    @Autowired
 //    private SplunkService splunkService;
@@ -509,6 +513,22 @@ public class CloudIntegrationController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                 .body(ApiResponse.error("Error deleting file: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/gcp/excel/parse/{filename}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> parseExcelFromGcp(@PathVariable String filename) {
+        if (gcpService == null) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("GCP integration is disabled"));
+        }
+        
+        try {
+            Map<String, Object> result = excelProcessingService.parseExcelFromGcp(filename);
+            return ResponseEntity.ok(ApiResponse.success("Excel file parsed and cached successfully", result));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Error parsing Excel file: " + e.getMessage()));
         }
     }
 }

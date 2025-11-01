@@ -1,0 +1,113 @@
+.excel-processor-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header-card {
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #34a853 0%, #2e7d32 100%);
+  color: white;
+}
+
+.header-card mat-card-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.8rem;
+  font-weight: 300;
+}
+
+.excel-icon {
+  margin-right: 12px;
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+}
+
+.path-info {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.files-card,
+.sheets-card {
+  margin-bottom: 24px;
+}
+
+.files-table,
+.sheets-table {
+  width: 100%;
+}
+
+.files-table th,
+.sheets-table th {
+  font-weight: 600;
+  color: #333;
+}
+
+.files-table td,
+.sheets-table td {
+  padding: 12px 8px;
+}
+
+.path-cell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.loading-container {
+  padding: 20px;
+  text-align: center;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: #666;
+}
+
+.processing-indicator {
+  margin-bottom: 24px;
+}
+
+.processing-indicator mat-card {
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+}
+
+.processing-indicator mat-card-content {
+  padding: 16px;
+}
+
+mat-chip {
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .excel-processor-container {
+    padding: 16px;
+  }
+
+  .header-actions {
+    flex-direction: column;
+  }
+
+  .files-table,
+  .sheets-table {
+    font-size: 0.9rem;
+  }
+}
+

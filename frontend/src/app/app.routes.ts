@@ -22,5 +22,9 @@ export const routes: Routes = [
     path: 'monitoring', 
     loadComponent: () => import('./components/monitoring/monitoring.component').then(m => m.MonitoringComponent)
   },
+  { 
+    path: 'excel-processor', 
+    loadComponent: () => import('./components/excel-processor/excel-processor.component').then(m => m.ExcelProcessorComponent)
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];
