@@ -1,0 +1,171 @@
+<div class="monitoring-container">
+  <mat-card class="header-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="monitoring-icon">monitoring</mat-icon>
+        System Monitoring & Performance
+      </mat-card-title>
+      <mat-card-subtitle>Real-time monitoring of system health and performance metrics</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="header-actions">
+        <button mat-raised-button color="primary">
+          <mat-icon>refresh</mat-icon>
+          Refresh Metrics
+        </button>
+        <button mat-raised-button>
+          <mat-icon>settings</mat-icon>
+          Configure Alerts
+        </button>
+        <button mat-raised-button>
+          <mat-icon>download</mat-icon>
+          Export Report
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="overview-metrics">
+    <mat-card class="overview-card">
+      <mat-card-header>
+        <mat-card-title>System Overview</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="overview-grid">
+          <div class="overview-item">
+            <mat-icon class="overview-icon cpu">memory</mat-icon>
+            <div class="overview-info">
+              <h4>Average CPU</h4>
+              <p class="overview-number">45%</p>
+              <mat-progress-bar mode="determinate" value="45" class="cpu-bar"></mat-progress-bar>
+            </div>
+          </div>
+          <div class="overview-item">
+            <mat-icon class="overview-icon memory">storage</mat-icon>
+            <div class="overview-info">
+              <h4>Memory Usage</h4>
+              <p class="overview-number">62%</p>
+              <mat-progress-bar mode="determinate" value="62" class="memory-bar"></mat-progress-bar>
+            </div>
+          </div>
+          <div class="overview-item">
+            <mat-icon class="overview-icon disk">folder</mat-icon>
+            <div class="overview-info">
+              <h4>Disk Usage</h4>
+              <p class="overview-number">78%</p>
+              <mat-progress-bar mode="determinate" value="78" class="disk-bar"></mat-progress-bar>
+            </div>
+          </div>
+          <div class="overview-item">
+            <mat-icon class="overview-icon network">network_check</mat-icon>
+            <div class="overview-info">
+              <h4>Network I/O</h4>
+              <p class="overview-number">156 MB/s</p>
+              <p class="overview-label">Outbound</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="alerts-section">
+    <mat-card class="alerts-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon class="alert-icon">notifications</mat-icon>
+          Active Alerts
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="alert-list">
+          <div class="alert-item critical">
+            <mat-icon>error</mat-icon>
+            <div class="alert-content">
+              <h4>High CPU Usage</h4>
+              <p>Server-02 CPU usage exceeded 90% for 5 minutes</p>
+              <span class="alert-time">2 minutes ago</span>
+            </div>
+          </div>
+          <div class="alert-item warning">
+            <mat-icon>warning</mat-icon>
+            <div class="alert-content">
+              <h4>Disk Space Low</h4>
+              <p>Database server disk usage at 85%</p>
+              <span class="alert-time">15 minutes ago</span>
+            </div>
+          </div>
+          <div class="alert-item info">
+            <mat-icon>info</mat-icon>
+            <div class="alert-content">
+              <h4>Service Restart</h4>
+              <p>Web server automatically restarted due to memory leak</p>
+              <span class="alert-time">1 hour ago</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="services-table-card">
+    <mat-card-header>
+      <mat-card-title>Service Performance Metrics</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table mat-table [dataSource]="systemMetrics" class="metrics-table">
+        <ng-container matColumnDef="service">
+          <th mat-header-cell *matHeaderCellDef>Service</th>
+          <td mat-cell *matCellDef="let metric">{{ metric.service }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="cpu">
+          <th mat-header-cell *matHeaderCellDef>CPU Usage</th>
+          <td mat-cell *matCellDef="let metric">
+            <div class="metric-cell">
+              <span class="metric-value">{{ metric.cpu }}%</span>
+              <mat-progress-bar mode="determinate" [value]="metric.cpu" class="metric-bar"></mat-progress-bar>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="memory">
+          <th mat-header-cell *matHeaderCellDef>Memory</th>
+          <td mat-cell *matCellDef="let metric">
+            <div class="metric-cell">
+              <span class="metric-value">{{ metric.memory }}%</span>
+              <mat-progress-bar mode="determinate" [value]="metric.memory" class="metric-bar"></mat-progress-bar>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="disk">
+          <th mat-header-cell *matHeaderCellDef>Disk Usage</th>
+          <td mat-cell *matCellDef="let metric">
+            <div class="metric-cell">
+              <span class="metric-value">{{ metric.disk }}%</span>
+              <mat-progress-bar mode="determinate" [value]="metric.disk" class="metric-bar"></mat-progress-bar>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let metric">
+            <mat-chip [color]="getStatusColor(metric.status)" selected>
+              {{ metric.status }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="uptime">
+          <th mat-header-cell *matHeaderCellDef>Uptime</th>
+          <td mat-cell *matCellDef="let metric">{{ metric.uptime }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+</div>

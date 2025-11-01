@@ -1,0 +1,144 @@
+<div class="splunk-container">
+  <mat-card class="header-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="splunk-icon">analytics</mat-icon>
+        Splunk Logging & Analytics
+      </mat-card-title>
+      <mat-card-subtitle>Monitor and analyze your application logs and events</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="header-actions">
+        <button mat-raised-button color="primary">
+          <mat-icon>search</mat-icon>
+          Search Logs
+        </button>
+        <button mat-raised-button>
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+        <button mat-raised-button>
+          <mat-icon>download</mat-icon>
+          Export
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="metrics-grid">
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-content">
+          <mat-icon class="metric-icon">timeline</mat-icon>
+          <div class="metric-info">
+            <h3>Total Events</h3>
+            <p class="metric-number">12,847</p>
+            <p class="metric-change positive">+15.2%</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-content">
+          <mat-icon class="metric-icon">warning</mat-icon>
+          <div class="metric-info">
+            <h3>Error Events</h3>
+            <p class="metric-number">127</p>
+            <p class="metric-change negative">+3.1%</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-content">
+          <mat-icon class="metric-icon">check_circle</mat-icon>
+          <div class="metric-info">
+            <h3>Success Rate</h3>
+            <p class="metric-number">99.0%</p>
+            <mat-progress-bar mode="determinate" value="99" class="success-bar"></mat-progress-bar>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card">
+      <mat-card-content>
+        <div class="metric-content">
+          <mat-icon class="metric-icon">schedule</mat-icon>
+          <div class="metric-info">
+            <h3>Avg Response Time</h3>
+            <p class="metric-number">245ms</p>
+            <p class="metric-change positive">-8.3%</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="logs-table-card">
+    <mat-card-header>
+      <mat-card-title>Recent Log Events</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table mat-table [dataSource]="splunkLogs" class="logs-table">
+        <ng-container matColumnDef="timestamp">
+          <th mat-header-cell *matHeaderCellDef>Timestamp</th>
+          <td mat-cell *matCellDef="let log">{{ log.timestamp }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="level">
+          <th mat-header-cell *matHeaderCellDef>Level</th>
+          <td mat-cell *matCellDef="let log">
+            <mat-chip [color]="getLevelColor(log.level)" selected>
+              {{ log.level }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="source">
+          <th mat-header-cell *matHeaderCellDef>Source</th>
+          <td mat-cell *matCellDef="let log">{{ log.source }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="message">
+          <th mat-header-cell *matHeaderCellDef>Message</th>
+          <td mat-cell *matCellDef="let log" class="log-message">{{ log.message }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="count">
+          <th mat-header-cell *matHeaderCellDef>Count</th>
+          <td mat-cell *matCellDef="let log">{{ log.count }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="search-card">
+    <mat-card-header>
+      <mat-card-title>Log Search</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="search-controls">
+        <button mat-raised-button color="primary" class="search-button">
+          <mat-icon>search</mat-icon>
+          Search
+        </button>
+        <button mat-raised-button class="search-button">
+          <mat-icon>filter_list</mat-icon>
+          Filter
+        </button>
+        <button mat-raised-button class="search-button">
+          <mat-icon>schedule</mat-icon>
+          Time Range
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

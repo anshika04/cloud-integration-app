@@ -1,0 +1,94 @@
+<div class="app-container">
+  <mat-toolbar color="primary" class="app-toolbar">
+    <button 
+      mat-icon-button 
+      (click)="sidenav.toggle()" 
+      class="menu-button"
+      [class.hidden]="!isMobile">
+      <mat-icon>menu</mat-icon>
+    </button>
+    
+    <div class="toolbar-content">
+      <mat-icon class="app-icon">cloud</mat-icon>
+      <span class="app-title">Cloud Integration Platform</span>
+    </div>
+    
+    <div class="toolbar-actions">
+      <button mat-icon-button [matMenuTriggerFor]="userMenu">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+      <mat-menu #userMenu="matMenu">
+        <button mat-menu-item>
+          <mat-icon>person</mat-icon>
+          <span>Profile</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>settings</mat-icon>
+          <span>Settings</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-toolbar>
+
+  <mat-sidenav-container class="sidenav-container">
+    <mat-sidenav 
+      #sidenav 
+      mode="side" 
+      [opened]="!isMobile"
+      class="app-sidenav"
+      fixedInViewport
+      [attr.role]="isMobile ? 'dialog' : 'navigation'"
+      [mode]="isMobile ? 'over' : 'side'"
+      [disableClose]="!isMobile">
+      
+      <mat-nav-list class="nav-list">
+        <a mat-list-item routerLink="/dashboard" routerLinkActive="active-link" (click)="isMobile && sidenav.close()">
+          <mat-icon matListItemIcon>dashboard</mat-icon>
+          <span matListItemTitle>Dashboard</span>
+        </a>
+        
+        <a mat-list-item routerLink="/azure" routerLinkActive="active-link" (click)="isMobile && sidenav.close()">
+          <mat-icon matListItemIcon>cloud</mat-icon>
+          <span matListItemTitle>Azure Services</span>
+        </a>
+        
+        <a mat-list-item routerLink="/gcp" routerLinkActive="active-link" (click)="isMobile && sidenav.close()">
+          <mat-icon matListItemIcon>cloud_queue</mat-icon>
+          <span matListItemTitle>GCP Services</span>
+        </a>
+        
+        <a mat-list-item routerLink="/splunk" routerLinkActive="active-link" (click)="isMobile && sidenav.close()">
+          <mat-icon matListItemIcon>analytics</mat-icon>
+          <span matListItemTitle>Splunk Logging</span>
+        </a>
+        
+        <a mat-list-item routerLink="/monitoring" routerLinkActive="active-link" (click)="isMobile && sidenav.close()">
+          <mat-icon matListItemIcon>monitoring</mat-icon>
+          <span matListItemTitle>System Monitoring</span>
+        </a>
+        
+        <mat-divider></mat-divider>
+        
+        <a mat-list-item href="/api/cloud/test" target="_blank">
+          <mat-icon matListItemIcon>api</mat-icon>
+          <span matListItemTitle>API Test</span>
+        </a>
+        
+        <a mat-list-item href="/api/cloud/health" target="_blank">
+          <mat-icon matListItemIcon>health_and_safety</mat-icon>
+          <span matListItemTitle>Health Check</span>
+        </a>
+      </mat-nav-list>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="main-content">
+      <div class="content-wrapper">
+        <router-outlet></router-outlet>
+      </div>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

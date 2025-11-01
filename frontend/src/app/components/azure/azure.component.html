@@ -1,0 +1,118 @@
+<div class="azure-container">
+  <mat-card class="header-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="azure-icon">cloud</mat-icon>
+        Azure Services
+      </mat-card-title>
+      <mat-card-subtitle>Manage your Microsoft Azure resources and services</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="header-actions">
+        <button mat-raised-button color="primary">
+          <mat-icon>add</mat-icon>
+          Add Resource
+        </button>
+        <button mat-raised-button>
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="services-overview">
+    <mat-card class="overview-card">
+      <mat-card-header>
+        <mat-card-title>Service Overview</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="overview-grid">
+          <div class="overview-item">
+            <mat-icon class="overview-icon storage">storage</mat-icon>
+            <div class="overview-info">
+              <h4>Storage Accounts</h4>
+              <p class="overview-number">5</p>
+            </div>
+          </div>
+          <div class="overview-item">
+            <mat-icon class="overview-icon keyvault">vpn_key</mat-icon>
+            <div class="overview-info">
+              <h4>Key Vaults</h4>
+              <p class="overview-number">3</p>
+            </div>
+          </div>
+          <div class="overview-item">
+            <mat-icon class="overview-icon queue">queue</mat-icon>
+            <div class="overview-info">
+              <h4>Queue Services</h4>
+              <p class="overview-number">8</p>
+            </div>
+          </div>
+          <div class="overview-item">
+            <mat-icon class="overview-icon compute">memory</mat-icon>
+            <div class="overview-info">
+              <h4>Compute Resources</h4>
+              <p class="overview-number">12</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="services-table-card">
+    <mat-card-header>
+      <mat-card-title>Azure Resources</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <table mat-table [dataSource]="azureServices" class="services-table">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Service Name</th>
+          <td mat-cell *matCellDef="let service">{{ service.name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let service">
+            <mat-chip>{{ service.type }}</mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let service">
+            <mat-chip [color]="getStatusColor(service.status)" selected>
+              {{ service.status }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="region">
+          <th mat-header-cell *matHeaderCellDef>Region</th>
+          <td mat-cell *matCellDef="let service">{{ service.region }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="lastModified">
+          <th mat-header-cell *matHeaderCellDef>Last Modified</th>
+          <td mat-cell *matCellDef="let service">{{ service.lastModified }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let service">
+            <button mat-icon-button color="primary">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+</div>

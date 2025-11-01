@@ -1,0 +1,154 @@
+.splunk-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-card {
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+  color: white;
+}
+
+.header-card mat-card-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.8rem;
+  font-weight: 300;
+}
+
+.splunk-icon {
+  margin-right: 12px;
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-content {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+}
+
+.metric-icon {
+  font-size: 3rem;
+  width: 3rem;
+  height: 3rem;
+  margin-right: 16px;
+  color: #ff6600;
+}
+
+.metric-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.metric-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0 0 4px 0;
+  color: #1976d2;
+}
+
+.metric-change {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.metric-change.positive {
+  color: #4caf50;
+}
+
+.metric-change.negative {
+  color: #f44336;
+}
+
+.success-bar {
+  margin-top: 8px;
+  height: 8px;
+}
+
+.logs-table-card {
+  margin-bottom: 24px;
+}
+
+.logs-table {
+  width: 100%;
+}
+
+.logs-table th {
+  font-weight: 600;
+  color: #333;
+}
+
+.logs-table td {
+  padding: 12px 8px;
+}
+
+.log-message {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-card {
+  margin-bottom: 24px;
+}
+
+.search-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-button {
+  display: flex;
+  align-items: center;
+}
+
+.search-button mat-icon {
+  margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .splunk-container {
+    padding: 16px;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+  }
+  
+  .search-controls {
+    flex-direction: column;
+  }
+}
