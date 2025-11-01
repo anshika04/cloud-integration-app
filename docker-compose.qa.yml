@@ -87,7 +87,7 @@ services:
   # Frontend Service
   frontend:
     build:
-      context: ../cloud-integration-frontend
+      context: ./frontend
       dockerfile: Dockerfile.frontend
       args:
         - ENVIRONMENT=qa
