@@ -227,3 +227,18 @@ coverage/
 # Deployment files
 deploy-pids.tmp
 *.deploy.log
+
+# GCP Credentials
+**/gcp*key*.json
+**/*gcp*credentials*.json
+**/gcp-storage-key.json
+**/google-credentials.json
+**/*secret*.json
+**/service-account*.json
+
+# Sensitive configuration files
+**/application-prod*.yml
+**/application-prod*.yaml
+**/.env.production
+**/secrets.yml
+**/secrets.yaml

@@ -76,8 +76,10 @@ services:
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
       - AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - GCP_ENABLED=true
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID:-cloud-integration-application}
       - GCP_SERVICE_ACCOUNT_KEY=${GCP_SERVICE_ACCOUNT_KEY}
+      - GCP_KEY_FILE_PATH=/app/gcp-storage-key.json
       - SPLUNK_HOST=${SPLUNK_HOST}
       - SPLUNK_PORT=${SPLUNK_PORT:-8089}
       - SPLUNK_TOKEN=${SPLUNK_TOKEN}
@@ -86,6 +88,7 @@ services:
     volumes:
       - ./environments/prod/backend/application-prod.yml:/app/config/application-prod.yml
       - ./logs/backend-prod:/app/logs
+      - ~/Downloads/gcp-storage-key.json:/app/gcp-storage-key.json
     depends_on:
       postgres:
         condition: service_healthy

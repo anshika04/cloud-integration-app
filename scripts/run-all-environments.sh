@@ -5,6 +5,9 @@
 
 set -e
 
+# Add Docker to PATH if needed
+export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+
 echo "🚀 Starting all environments simultaneously..."
 
 # Set environment variables
@@ -20,10 +23,10 @@ run_environment() {
     echo "📦 Starting $env environment with project name: $project_name"
     
     # Stop any existing containers for this project
-    docker-compose -p $project_name -f $compose_file down 2>/dev/null || true
+    docker compose -p $project_name -f $compose_file down 2>/dev/null || true
     
     # Start the environment
-    docker-compose -p $project_name -f $compose_file up -d
+    docker compose -p $project_name -f $compose_file up -d
     
     echo "✅ $env environment started"
 }

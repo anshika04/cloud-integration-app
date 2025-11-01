@@ -54,12 +54,17 @@ azure:
 
 # GCP Configuration
 gcp:
-  project-id: ${GCP_PROJECT_ID:your-project-id}
+  enabled: ${GCP_ENABLED:false}
+  project-id: ${GCP_PROJECT_ID:cloud-integration-application}
   storage:
-    bucket-name: ${GCP_STORAGE_BUCKET:your-bucket}
+    bucket-name: ${GCP_STORAGE_BUCKET:my-excel-reports}
   pubsub:
     topic-name: ${GCP_PUBSUB_TOPIC:your-topic}
     subscription-name: ${GCP_PUBSUB_SUBSCRIPTION:your-subscription}
+  credentials:
+    # Priority: service-account-key > key-file-path > Application Default Credentials
+    service-account-key: ${GCP_SERVICE_ACCOUNT_KEY:}
+    key-file-path: ${GCP_KEY_FILE_PATH:/Users/anshika/Downloads/gcp-storage-key.json}
 
 # Splunk Configuration
 splunk:
@@ -105,6 +110,21 @@ spring:
       ddl-auto: create-drop
 
 ---
+# QA Profile
+spring:
+  config:
+    activate:
+      on-profile: qa
+  datasource:
+    url: jdbc:h2:mem:testdb_qa
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  data:
+    redis:
+      database: 1
+
+---
 # Production Profile
 spring:
   config:
@@ -117,6 +137,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  data:
+    redis:
+      database: 2
 
 ---
 # Docker Profile

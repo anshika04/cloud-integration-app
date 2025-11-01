@@ -54,11 +54,15 @@ services:
       - DB_NAME=cloudintegration_dev
       - DB_USERNAME=dev_user
       - DB_PASSWORD=dev_password
+      - GCP_ENABLED=true
+      - GCP_PROJECT_ID=cloud-integration-application
+      - GCP_KEY_FILE_PATH=/app/gcp-storage-key.json
     ports:
       - "8081:8080"
     volumes:
       - ./environments/dev/backend/application-dev.yml:/app/config/application-dev.yml
       - ./logs/backend:/app/logs
+      - ~/Downloads/gcp-storage-key.json:/app/gcp-storage-key.json
     depends_on:
       postgres:
         condition: service_healthy

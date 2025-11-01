@@ -59,8 +59,9 @@ services:
       - AZURE_CLIENT_ID=qa_azure_client_id
       - AZURE_CLIENT_SECRET=qa_azure_client_secret
       - AZURE_TENANT_ID=qa_azure_tenant_id
-      - GCP_PROJECT_ID=qa_gcp_project_id
-      - GCP_SERVICE_ACCOUNT_KEY=qa_gcp_service_account_key
+      - GCP_ENABLED=true
+      - GCP_PROJECT_ID=cloud-integration-application
+      - GCP_KEY_FILE_PATH=/app/gcp-storage-key.json
       - SPLUNK_HOST=qa_splunk_host
       - SPLUNK_TOKEN=qa_splunk_token
     ports:
@@ -68,6 +69,7 @@ services:
     volumes:
       - ./environments/qa/backend/application-qa.yml:/app/config/application-qa.yml
       - ./logs/backend-qa:/app/logs
+      - ~/Downloads/gcp-storage-key.json:/app/gcp-storage-key.json
     depends_on:
       postgres:
         condition: service_healthy
