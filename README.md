@@ -23,11 +23,13 @@ This project provides a comprehensive cloud integration platform with the follow
 
 - **Multi-Environment Support**: Development, QA, and Production environments
 - **Cloud Integrations**: Azure (Key Vault, Blob Storage, Queue Service), GCP (Storage, Pub/Sub, Secret Manager)
+- **GCP File Management**: Environment-specific storage paths, upload, download, list, and delete operations
 - **Logging & Monitoring**: Splunk integration with comprehensive logging
 - **Security**: OAuth2 Resource Server with environment-specific security configurations
 - **Containerization**: Docker support for all environments
 - **Database**: PostgreSQL with Redis caching and data management
-- **Frontend**: Angular 17 with Material Design components
+- **Frontend**: Angular 17 with Material Design components and clean GCP file management UI
+- **Monorepo Structure**: Backend and frontend in unified repository
 
 ## 🏗️ Architecture
 
@@ -122,8 +124,37 @@ Infrastructure
 #### GCP
 - Google Cloud Platform project
 - Service Account with appropriate permissions
-- Cloud Storage bucket
+- Cloud Storage bucket (default: `my-excel-reports`)
 - Pub/Sub topics (optional)
+- Secret Manager (optional)
+
+**GCP Authentication Methods** (in order of priority):
+1. Service Account JSON Key File (recommended for local/Docker)
+2. Base64 Encoded Service Account Key (via environment variable)
+3. Application Default Credentials (for GCP VM/GKE)
+
+**GCP Configuration:**
+```yaml
+gcp:
+  enabled: true
+  project-id: your_gcp_project_id
+  storage:
+    bucket-name: my-excel-reports
+  credentials:
+    service-account-key: ${GCP_SERVICE_ACCOUNT_KEY:}  # Base64 encoded (optional)
+    key-file-path: ${GCP_KEY_FILE_PATH:}               # Absolute path to JSON (optional)
+  pubsub:
+    topic-name: your_topic_name
+    subscription-name: your_subscription_name
+```
+
+**Environment Variables:**
+```bash
+GCP_ENABLED=true
+GCP_PROJECT_ID=your_gcp_project_id
+GCP_KEY_FILE_PATH=/path/to/gcp-storage-key.json
+# GCP_SERVICE_ACCOUNT_KEY=base64_encoded_json_key (alternative)
+```
 
 #### Splunk
 - Splunk Enterprise or Cloud instance
@@ -172,7 +203,7 @@ cloud-integration-app/
 │   │   ├── controller/                     # REST controllers
 │   │   ├── integration/                    # Cloud integration services
 │   │   │   ├── azure/                     # Azure integration
-│   │   │   ├── gcp/                       # GCP integration
+│   │   │   ├── gcp/                       # GCP integration (Storage, Pub/Sub, Secrets)
 │   │   │   └── splunk/                    # Splunk integration
 │   │   ├── model/                         # Data models
 │   │   │   ├── DataEntity.java           # JPA entity for structured data
@@ -186,6 +217,25 @@ cloud-integration-app/
 │   │       └── ReferenceIdGenerator.java # Unique ID generation service
 │   └── main/resources/
 │       └── application.yml                # Main configuration
+├── frontend/                              # Angular frontend (monorepo)
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/               # Angular components
+│   │   │   │   ├── dashboard/
+│   │   │   │   ├── azure/
+│   │   │   │   ├── gcp/                  # GCP file management UI
+│   │   │   │   ├── splunk/
+│   │   │   │   └── monitoring/
+│   │   │   ├── services/                 # Angular services
+│   │   │   ├── app.component.ts
+│   │   │   ├── app.routes.ts
+│   │   │   └── main.ts
+│   │   ├── assets/                       # Static assets
+│   │   └── index.html
+│   ├── Dockerfile.frontend               # Frontend Dockerfile
+│   ├── nginx.conf                        # Nginx configuration
+│   ├── package.json                      # Node.js dependencies
+│   └── angular.json                      # Angular configuration
 ├── environments/                          # Environment-specific configs
 │   ├── dev/                              # Development environment
 │   │   ├── backend/
@@ -219,28 +269,9 @@ cloud-integration-app/
 ├── docker-compose.prod.yml               # Production Docker Compose
 ├── Dockerfile.backend                    # Backend Dockerfile
 ├── pom.xml                               # Maven configuration
+├── .gitignore                            # Git ignore rules (excludes credentials)
 ├── REDIS_CACHE_API.md                    # Redis cache API documentation
 └── README.md
-
-cloud-integration-frontend/
-├── src/                                  # Frontend source code
-│   ├── app/
-│   │   ├── components/                   # Angular components
-│   │   │   ├── dashboard/
-│   │   │   ├── azure/
-│   │   │   ├── gcp/
-│   │   │   ├── splunk/
-│   │   │   └── monitoring/
-│   │   ├── services/                     # Angular services
-│   │   ├── app.component.ts
-│   │   ├── app.routes.ts
-│   │   └── main.ts
-│   ├── assets/                           # Static assets
-│   └── index.html
-├── Dockerfile.frontend                   # Frontend Dockerfile
-├── nginx.conf                            # Nginx configuration
-├── package.json                          # Node.js dependencies
-└── angular.json                          # Angular configuration
 ```
 
 ## 🚀 Quick Start
@@ -318,7 +349,7 @@ docker run -d \
 
 ```bash
 # Navigate to frontend directory
-cd ../cloud-integration-frontend
+cd frontend
 
 # Install dependencies
 npm install
@@ -343,7 +374,7 @@ ng test
 
 ```bash
 # Build frontend image
-docker build -f Dockerfile.frontend -t cloud-integration-app-frontend .
+docker build -f frontend/Dockerfile.frontend -t cloud-integration-app-frontend ./frontend
 
 # Run frontend container
 docker run -d \
@@ -550,9 +581,86 @@ GET /cloud/azure/queue/messages
 #### GCP Integration
 ```http
 GET /cloud/gcp/status
-POST /cloud/gcp/storage/upload
-GET /cloud/gcp/pubsub/messages
+POST /cloud/gcp/upload
+GET /cloud/gcp/download/{filename}
+GET /cloud/gcp/files
+DELETE /cloud/gcp/files/{filename}
+POST /cloud/gcp/pubsub
 ```
+
+#### GCP File Management
+
+The GCP integration provides comprehensive file management with environment-specific storage paths. Files are automatically organized by environment to ensure proper data isolation.
+
+**Upload File:**
+```http
+POST /cloud/gcp/upload
+Content-Type: multipart/form-data
+
+file: [binary file data]
+```
+
+**Response:**
+```json
+{
+  "message": "File uploaded successfully to GCP",
+  "filename": "sample.xlsx"
+}
+```
+
+**List Files:**
+```http
+GET /cloud/gcp/files
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Files retrieved successfully",
+  "data": [
+    {
+      "name": "dev/reports/sample.xlsx",
+      "path": "dev/reports/sample.xlsx",
+      "filename": "sample.xlsx",
+      "size": 10621,
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "created": 1727819836000,
+      "updated": 1727819836000
+    }
+  ],
+  "timestamp": "2025-11-01T02:37:16"
+}
+```
+
+**Download File:**
+```http
+GET /cloud/gcp/download/{filename}
+```
+
+Returns binary file data with appropriate content type.
+
+**Delete File:**
+```http
+DELETE /cloud/gcp/files/{filename}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "File deleted successfully",
+  "data": "sample.xlsx",
+  "timestamp": "2025-11-01T02:37:16"
+}
+```
+
+**Environment-Specific Paths:**
+- **Development**: `dev/reports/`
+- **QA**: `qa/reports/`
+- **Production**: `prod/reports/`
+
+Files are automatically stored in the appropriate environment path based on the active Spring profile.
 
 #### Splunk Integration
 ```http
@@ -1054,6 +1162,58 @@ grep -r "ddl-auto" environments/*/backend/
 docker-compose -p cloud-integration-dev -f docker-compose.dev.yml restart backend
 ```
 
+#### 8. GCP Integration Issues
+
+**Error:** `GCP service account key file not found` or `Permission denied`
+
+**Solution:**
+```bash
+# Check if GCP key file exists and is accessible
+ls -la ~/Downloads/gcp-storage-key.json
+chmod 600 ~/Downloads/gcp-storage-key.json
+
+# Verify Docker volume mount
+grep -A5 "gcp-storage-key" docker-compose.dev.yml
+
+# Check GCP configuration
+docker logs cloud-integration-dev-backend | grep -i "gcp"
+
+# Test GCP connection
+curl http://localhost:8081/api/cloud/gcp/files
+```
+
+**Error:** `404 Not Found` when accessing GCP endpoints
+
+**Solution:**
+```bash
+# Verify GCP is enabled in configuration
+grep -A3 "gcp.enabled" src/main/resources/application.yml
+
+# Check GcpService is loaded
+docker logs cloud-integration-dev-backend | grep "GcpService"
+
+# Verify bucket and project ID are correct
+docker exec cloud-integration-dev-backend env | grep GCP
+```
+
+**Error:** `MalformedJsonException` when loading GCP credentials
+
+**Solution:**
+```bash
+# Verify JSON key file is valid
+cat ~/Downloads/gcp-storage-key.json | jq .
+
+# Check if using correct authentication method
+# Remove GCP_SERVICE_ACCOUNT_KEY if using file path
+docker-compose down && docker-compose up -d
+```
+
+**Error:** JVM crash (SIGSEGV) on ARM64 with Alpine-based Docker image
+
+**Solution:**
+- Already fixed: Using Debian-based JRE instead of Alpine in `Dockerfile.backend`
+- If issue persists, ensure using `eclipse-temurin:21-jre` base image
+
 ### Log Analysis
 
 #### View Application Logs
@@ -1230,7 +1390,7 @@ For support and questions:
 
 ---
 
-**Last Updated:** October 2025  
-**Version:** 1.1.0  
-**Features:** Redis Cache Integration, Multi-Environment Support, Cloud Integrations  
+**Last Updated:** November 2025  
+**Version:** 1.2.0  
+**Features:** GCP File Management, Redis Cache Integration, Multi-Environment Support, Cloud Integrations, Monorepo Structure  
 **Maintainer:** Cloud Integration Team
