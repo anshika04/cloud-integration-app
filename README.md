@@ -24,6 +24,7 @@ This project provides a comprehensive cloud integration platform with the follow
 - **Multi-Environment Support**: Development, QA, and Production environments
 - **Cloud Integrations**: Azure (Key Vault, Blob Storage, Queue Service), GCP (Storage, Pub/Sub, Secret Manager)
 - **GCP File Management**: Environment-specific storage paths, upload, download, list, and delete operations
+- **Excel Processing**: Parse Excel files from GCP, extract sheets, and cache to Redis with unique reference IDs
 - **Logging & Monitoring**: Splunk integration with comprehensive logging
 - **Security**: OAuth2 Resource Server with environment-specific security configurations
 - **Containerization**: Docker support for all environments
@@ -73,6 +74,7 @@ Frontend (Angular 17)
 ├── Dashboard Component
 ├── Azure Integration Component
 ├── GCP Integration Component
+├── Excel Processor Component
 ├── Splunk Monitoring Component
 └── Cloud Service Integration
 
@@ -83,6 +85,10 @@ Backend (Spring Boot 3.2)
 │   ├── Azure Service
 │   ├── GCP Service
 │   └── Splunk Service
+├── Excel Processing Service
+│   ├── Excel File Parsing (Apache POI)
+│   ├── Sheet Extraction and Caching
+│   └── Reference ID Generation
 ├── Data Access Layer
 │   ├── Redis Cache Service
 │   ├── Data Entity Repository
@@ -214,6 +220,7 @@ cloud-integration-app/
 │   │   └── service/                       # Business logic services
 │   │       ├── RedisCacheService.java    # Redis cache operations
 │   │       ├── DataService.java          # Data orchestration service
+│   │       ├── ExcelProcessingService.java # Excel file parsing and caching
 │   │       └── ReferenceIdGenerator.java # Unique ID generation service
 │   └── main/resources/
 │       └── application.yml                # Main configuration
@@ -224,6 +231,7 @@ cloud-integration-app/
 │   │   │   │   ├── dashboard/
 │   │   │   │   ├── azure/
 │   │   │   │   ├── gcp/                  # GCP file management UI
+│   │   │   │   ├── excel-processor/       # Excel processing UI
 │   │   │   │   ├── splunk/
 │   │   │   │   └── monitoring/
 │   │   │   ├── services/                 # Angular services
@@ -586,6 +594,7 @@ GET /cloud/gcp/download/{filename}
 GET /cloud/gcp/files
 DELETE /cloud/gcp/files/{filename}
 POST /cloud/gcp/pubsub
+POST /cloud/gcp/excel/parse/{filename}
 ```
 
 #### GCP File Management
@@ -661,6 +670,85 @@ DELETE /cloud/gcp/files/{filename}
 - **Production**: `prod/reports/`
 
 Files are automatically stored in the appropriate environment path based on the active Spring profile.
+
+#### Excel Processing
+
+The Excel processing feature allows you to parse Excel files from GCP storage, extract data from all sheets, and cache each sheet to Redis with unique reference IDs for easy retrieval.
+
+**Parse Excel File from GCP:**
+```http
+POST /cloud/gcp/excel/parse/{filename}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Excel file parsed and cached successfully",
+  "data": {
+    "filename": "sample-data-file.xlsx",
+    "totalSheets": 2,
+    "sheets": [
+      {
+        "name": "QuerySheet1",
+        "headers": ["First Name", "Last Name", "Gender", "Country", "Age", "Date", "Id"],
+        "rows": [
+          {
+            "First Name": "1",
+            "Last Name": "Dulce",
+            "Gender": "Abril",
+            "Country": "Female",
+            "Age": "United States",
+            "Date": "32",
+            "Id": "15/10/2017"
+          }
+        ],
+        "rowCount": 9
+      }
+    ],
+    "cachedSheets": [
+      {
+        "sheetName": "QuerySheet1",
+        "referenceId": "EXCEL-20251101061840-TCNYB1-0003",
+        "rowCount": "9"
+      },
+      {
+        "sheetName": "QuerySheet2",
+        "referenceId": "EXCEL-20251101061840-JS8QGZ-0004",
+        "rowCount": "5"
+      }
+    ]
+  },
+  "timestamp": "2025-11-01T06:18:40"
+}
+```
+
+**Features:**
+- Supports `.xlsx`, `.xls`, and `.xlsm` file formats
+- Automatically extracts all sheets from the workbook
+- Parses headers and data rows from each sheet
+- Generates unique reference IDs for each sheet (format: `EXCEL-TIMESTAMP-RANDOM-SEQUENCE`)
+- Caches each sheet to Redis with 1-hour TTL
+- Returns comprehensive parsing results with row counts
+
+**Frontend UI:**
+Access the Excel Processor via the side navigation menu or directly at `/excel-processor`. The UI allows you to:
+- Browse Excel files available in GCP bucket
+- Select and process Excel files
+- View parsed sheets with their reference IDs
+- Monitor processing progress
+
+**Retrieving Cached Sheet Data:**
+Once an Excel file is parsed, you can retrieve individual sheets from Redis using their reference IDs:
+
+```http
+GET /cache/retrieve/{referenceId}
+```
+
+For example, to retrieve the first sheet:
+```http
+GET /cache/retrieve/EXCEL-20251101061840-TCNYB1-0003
+```
 
 #### Splunk Integration
 ```http
@@ -1391,6 +1479,6 @@ For support and questions:
 ---
 
 **Last Updated:** November 2025  
-**Version:** 1.2.0  
-**Features:** GCP File Management, Redis Cache Integration, Multi-Environment Support, Cloud Integrations, Monorepo Structure  
+**Version:** 1.3.0  
+**Features:** Excel Processing from GCP, GCP File Management, Redis Cache Integration, Multi-Environment Support, Cloud Integrations, Monorepo Structure  
 **Maintainer:** Cloud Integration Team
